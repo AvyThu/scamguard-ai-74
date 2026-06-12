@@ -14,16 +14,336 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analysis_history: {
+        Row: {
+          analysis_type: string
+          created_at: string
+          id: string
+          input_summary: string | null
+          result: Json | null
+          risk_level: string | null
+          user_id: string
+        }
+        Insert: {
+          analysis_type: string
+          created_at?: string
+          id?: string
+          input_summary?: string | null
+          result?: Json | null
+          risk_level?: string | null
+          user_id: string
+        }
+        Update: {
+          analysis_type?: string
+          created_at?: string
+          id?: string
+          input_summary?: string | null
+          result?: Json | null
+          risk_level?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      analytics_events: {
+        Row: {
+          cluster: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          risk_level: string | null
+        }
+        Insert: {
+          cluster?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          risk_level?: string | null
+        }
+        Update: {
+          cluster?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          risk_level?: string | null
+        }
+        Relationships: []
+      }
+      cyber_stats: {
+        Row: {
+          id: string
+          label: string
+          metric_key: string
+          source: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          label: string
+          metric_key: string
+          source?: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          id?: string
+          label?: string
+          metric_key?: string
+          source?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      education_content: {
+        Row: {
+          body: string
+          category: string | null
+          created_at: string
+          id: string
+          title: string
+        }
+        Insert: {
+          body: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          title: string
+        }
+        Update: {
+          body?: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      emergency_contacts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          relationship: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          relationship?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          relationship?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      news_articles: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          published_at: string | null
+          source: string | null
+          source_url: string | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          source?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          source?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          elderly_mode: boolean | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          elderly_mode?: boolean | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          elderly_mode?: boolean | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scam_reports: {
+        Row: {
+          category: string
+          cluster: string | null
+          created_at: string
+          description: string
+          estimated_loss: number | null
+          id: string
+          incident_date: string | null
+          is_anonymous: boolean | null
+          platform: string | null
+          region: string | null
+          screenshot_url: string | null
+          status: string
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          cluster?: string | null
+          created_at?: string
+          description: string
+          estimated_loss?: number | null
+          id?: string
+          incident_date?: string | null
+          is_anonymous?: boolean | null
+          platform?: string | null
+          region?: string | null
+          screenshot_url?: string | null
+          status?: string
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          cluster?: string | null
+          created_at?: string
+          description?: string
+          estimated_loss?: number | null
+          id?: string
+          incident_date?: string | null
+          is_anonymous?: boolean | null
+          platform?: string | null
+          region?: string | null
+          screenshot_url?: string | null
+          status?: string
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      url_blacklist: {
+        Row: {
+          cluster: string | null
+          created_at: string
+          id: string
+          reason: string | null
+          url_pattern: string
+        }
+        Insert: {
+          cluster?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          url_pattern: string
+        }
+        Update: {
+          cluster?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          url_pattern?: string
+        }
+        Relationships: []
+      }
+      url_whitelist: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          url_pattern: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          url_pattern: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          url_pattern?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +470,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
