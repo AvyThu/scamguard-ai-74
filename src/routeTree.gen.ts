@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ScreenshotDetectorRouteImport } from './routes/screenshot-detector'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as RecoveryRouteImport } from './routes/recovery'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as EmergencyRouteImport } from './routes/emergency'
 import { Route as DnaMapRouteImport } from './routes/dna-map'
@@ -27,6 +28,11 @@ const ScreenshotDetectorRoute = ScreenshotDetectorRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecoveryRoute = RecoveryRouteImport.update({
+  id: '/recovery',
+  path: '/recovery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/dna-map': typeof DnaMapRoute
   '/emergency': typeof EmergencyRoute
   '/profile': typeof ProfileRoute
+  '/recovery': typeof RecoveryRoute
   '/reports': typeof ReportsRoute
   '/screenshot-detector': typeof ScreenshotDetectorRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/dna-map': typeof DnaMapRoute
   '/emergency': typeof EmergencyRoute
   '/profile': typeof ProfileRoute
+  '/recovery': typeof RecoveryRoute
   '/reports': typeof ReportsRoute
   '/screenshot-detector': typeof ScreenshotDetectorRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/dna-map': typeof DnaMapRoute
   '/emergency': typeof EmergencyRoute
   '/profile': typeof ProfileRoute
+  '/recovery': typeof RecoveryRoute
   '/reports': typeof ReportsRoute
   '/screenshot-detector': typeof ScreenshotDetectorRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/dna-map'
     | '/emergency'
     | '/profile'
+    | '/recovery'
     | '/reports'
     | '/screenshot-detector'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/dna-map'
     | '/emergency'
     | '/profile'
+    | '/recovery'
     | '/reports'
     | '/screenshot-detector'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/dna-map'
     | '/emergency'
     | '/profile'
+    | '/recovery'
     | '/reports'
     | '/screenshot-detector'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   DnaMapRoute: typeof DnaMapRoute
   EmergencyRoute: typeof EmergencyRoute
   ProfileRoute: typeof ProfileRoute
+  RecoveryRoute: typeof RecoveryRoute
   ReportsRoute: typeof ReportsRoute
   ScreenshotDetectorRoute: typeof ScreenshotDetectorRoute
 }
@@ -161,6 +174,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recovery': {
+      id: '/recovery'
+      path: '/recovery'
+      fullPath: '/recovery'
+      preLoaderRoute: typeof RecoveryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   DnaMapRoute: DnaMapRoute,
   EmergencyRoute: EmergencyRoute,
   ProfileRoute: ProfileRoute,
+  RecoveryRoute: RecoveryRoute,
   ReportsRoute: ReportsRoute,
   ScreenshotDetectorRoute: ScreenshotDetectorRoute,
 }

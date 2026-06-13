@@ -10,6 +10,7 @@ const NAV = [
   { to: "/screenshot-detector", label: "Quét ảnh" },
   { to: "/reports", label: "Báo cáo" },
   { to: "/analytics", label: "Thống kê" },
+  { to: "/recovery", label: "Xử lí khi bị lừa" },
   { to: "/emergency", label: "Khẩn cấp" },
 ] as const;
 

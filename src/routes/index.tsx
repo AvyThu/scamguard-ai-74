@@ -2,24 +2,39 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
-import { Shield, AlertTriangle, CheckCircle2, Search, Camera, Network, Phone, Sparkles } from "lucide-react";
+import {
+  Shield, AlertTriangle, CheckCircle2, Search, Camera, Network, Phone, Sparkles,
+  Lightbulb, ExternalLink, LifeBuoy,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { analyzeUrl, getPublicStats } from "@/lib/scam.functions";
 import { useElderlyMode } from "@/hooks/use-elderly";
+import { RiskGauge } from "@/components/risk-gauge";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "ScamShield AI — Trang chủ" }] }),
+  head: () => ({ meta: [{ title: "ScamShield AI — Lá chắn AI chống lừa đảo Việt Nam" }] }),
   component: Home,
 });
 
+interface UrlFactor {
+  label: string;
+  detail?: string;
+  points: number;
+  category: string;
+}
 interface UrlResult {
   risk: "SAFE" | "SUSPICIOUS" | "DANGEROUS" | "UNKNOWN";
   score: number;
   url: string;
-  reasons: string[];
+  host: string;
+  factors: UrlFactor[];
   cluster: string;
+  clusterName: string;
+  brandImpersonated: string | null;
+  intelMatches: Array<{ title: string; source_org: string; source_url: string | null }>;
   recommendations: string[];
 }
 
@@ -40,12 +55,10 @@ function Home() {
     e.preventDefault();
     if (!url.trim()) return;
     setBusy(true);
-    try { setResult(await run({ data: { url: url.trim() } })); }
+    try { setResult(await run({ data: { url: url.trim() } }) as UrlResult); }
     catch { setResult(null); }
     finally { setBusy(false); }
   }
-
-  const riskColor = result?.risk === "DANGEROUS" ? "destructive" : result?.risk === "SUSPICIOUS" ? "warning" : "success";
 
   return (
     <div>
@@ -55,20 +68,20 @@ function Home() {
         <div className="relative mx-auto max-w-7xl px-4 py-20 md:py-28">
           <div className="mx-auto max-w-3xl text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5" /> Powered by Lovable AI · Gemini Vision
+              <Sparkles className="h-3.5 w-3.5" /> Smart URL Engine V2 · Powered by AI + Trusted Intel
             </div>
             <h1 className="mt-6 text-4xl font-bold leading-tight md:text-6xl">
-              Lá chắn <span className="text-cyber">AI</span> chống lừa đảo
-              <br />trên không gian mạng Việt Nam
+              Phân tích URL <span className="text-cyber">thông minh</span>
+              <br />đối chiếu chiến dịch lừa đảo Việt Nam
             </h1>
             <p className="mt-5 text-lg text-white/80">
-              Phân tích URL, ảnh chụp tin nhắn và phân loại theo Bộ Gen Lừa Đảo. Bảo vệ bạn và người thân khỏi các chiêu trò mạo danh, việc nhẹ lương cao, giả mạo sàn TMĐT và thu hồi vốn.
+              Đánh giá rủi ro URL theo 10+ yếu tố: cấu trúc, TLD, typosquatting, homograph, mạo danh thương hiệu, đối chiếu CSDL cảnh báo của Bộ Công an, NCSC và báo chí.
             </p>
             <form onSubmit={check} className="mx-auto mt-8 flex max-w-2xl flex-col gap-2 sm:flex-row">
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="Dán URL nghi ngờ (vd: dichvucong-vn.net)"
+                placeholder="Dán URL nghi ngờ (vd: vietcombank-security.com)"
                 className="h-12 bg-white/95 text-foreground placeholder:text-muted-foreground"
               />
               <Button type="submit" disabled={busy} className="h-12 bg-cyber text-cyber-foreground hover:opacity-90">
@@ -85,40 +98,101 @@ function Home() {
 
       {/* URL Result */}
       {result && (
-        <section className="mx-auto -mt-10 max-w-4xl px-4">
+        <section className="mx-auto -mt-10 max-w-5xl px-4">
           <Card className={`shadow-cyber border-2 p-6 ${result.risk === "DANGEROUS" ? "border-destructive" : result.risk === "SUSPICIOUS" ? "border-warning" : "border-success"}`}>
-            <div className="flex items-start gap-4">
-              {result.risk === "DANGEROUS" ? <AlertTriangle className="h-10 w-10 text-destructive" />
-                : result.risk === "SUSPICIOUS" ? <AlertTriangle className="h-10 w-10 text-warning" />
-                : <CheckCircle2 className="h-10 w-10 text-success" />}
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-2xl font-bold">
-                    {result.risk === "DANGEROUS" ? "NGUY HIỂM" : result.risk === "SUSPICIOUS" ? "NGHI NGỜ" : "AN TOÀN"}
-                  </h3>
-                  <span className={`rounded-full px-3 py-0.5 text-sm font-semibold text-${riskColor}-foreground bg-${riskColor}`}>
-                    Điểm rủi ro: {result.score}/100
-                  </span>
-                </div>
-                <p className="mt-1 break-all text-sm text-muted-foreground">{result.url}</p>
-                {result.reasons.length > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm font-semibold">Lý do:</div>
-                    <ul className="mt-1 list-inside list-disc text-sm text-muted-foreground">
-                      {result.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                    </ul>
+            <div className="grid gap-6 md:grid-cols-[260px_1fr]">
+              <div className="flex flex-col items-center justify-center gap-3 border-b pb-4 md:border-b-0 md:border-r md:pb-0 md:pr-6">
+                <RiskGauge score={result.score} risk={result.risk} />
+                <p className="break-all text-center text-xs text-muted-foreground">{result.host || result.url}</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-xl font-bold">Báo cáo phân tích chi tiết</h3>
+                    {result.brandImpersonated && (
+                      <Badge variant="destructive">Mạo danh: {result.brandImpersonated}</Badge>
+                    )}
+                    {result.cluster !== "UNKNOWN" && (
+                      <Badge variant="outline">Nhóm: {result.clusterName}</Badge>
+                    )}
                   </div>
-                )}
-                <div className="mt-4 rounded-lg bg-accent p-4">
-                  <div className="text-sm font-semibold">Khuyến nghị:</div>
-                  <ul className="mt-1 list-inside list-disc text-sm">
+                  {result.intelMatches.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+                        <div>
+                          <p className="font-semibold">
+                            Cảnh báo: Website này có đặc điểm tương tự các chiến dịch lừa đảo đã được cơ quan chức năng cảnh báo.
+                          </p>
+                          <ul className="mt-2 space-y-1">
+                            {result.intelMatches.slice(0, 5).map((m, i) => (
+                              <li key={i} className="flex items-center gap-1 text-xs">
+                                <span className="font-medium">• {m.title}</span>
+                                <span className="text-muted-foreground">— {m.source_org}</span>
+                                {m.source_url && (
+                                  <a href={m.source_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Factor breakdown */}
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Phân rã điểm rủi ro
+                  </h4>
+                  {result.factors.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Không phát hiện yếu tố rủi ro nào. URL có vẻ an toàn theo các tiêu chí kỹ thuật.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {result.factors.map((f, i) => (
+                        <li key={i} className="flex items-start gap-3 rounded-md border bg-card p-3">
+                          <div
+                            className={`mt-0.5 flex h-7 min-w-[60px] items-center justify-center rounded-md text-xs font-bold ${
+                              f.points < 0 ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
+                            }`}
+                          >
+                            {f.points > 0 ? `+${f.points}` : f.points}
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">{f.label}</div>
+                            {f.detail && <div className="text-xs text-muted-foreground">{f.detail}</div>}
+                          </div>
+                        </li>
+                      ))}
+                      <li className="flex items-center justify-between rounded-md border-2 border-primary/40 bg-primary/5 p-3 font-semibold">
+                        <span>Tổng điểm rủi ro</span>
+                        <span className="text-lg">{result.score} / 100</span>
+                      </li>
+                    </ul>
+                  )}
+                </div>
+
+                {/* Recommendations */}
+                <div className="rounded-lg bg-accent p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Lightbulb className="h-4 w-4 text-cyber" /> AI khuyến nghị
+                  </div>
+                  <ul className="mt-2 list-inside list-disc space-y-1 text-sm">
                     {result.recommendations.map((r, i) => <li key={i}>{r}</li>)}
                   </ul>
                 </div>
+
                 {result.risk === "DANGEROUS" && (
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <a href="tel:113"><Button variant="destructive"><Phone className="mr-2 h-4 w-4" />Gọi 113 ngay</Button></a>
-                    <Link to="/emergency"><Button variant="outline">Liên hệ người thân</Button></Link>
+                    <Link to="/recovery"><Button variant="outline"><LifeBuoy className="mr-2 h-4 w-4" />Xử lí khi bị lừa</Button></Link>
+                    <Link to="/emergency"><Button variant="ghost">Liên hệ người thân</Button></Link>
                   </div>
                 )}
               </div>
@@ -149,10 +223,11 @@ function Home() {
       {/* Features */}
       <section className="mx-auto max-w-7xl px-4 pb-20">
         <h2 className="mb-8 text-center text-3xl font-bold">Bộ công cụ ScamShield</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          <FeatureCard to="/dna-map" icon={<Network className="h-6 w-6" />} title="Bản đồ Bộ Gen Lừa Đảo" desc="Phân cụm 4 nhóm lừa đảo phổ biến tại Việt Nam dựa trên báo cáo cộng đồng." />
-          <FeatureCard to="/screenshot-detector" icon={<Camera className="h-6 w-6" />} title="Quét ảnh chụp màn hình" desc="OCR + AI phân tích ảnh SMS, Zalo, Messenger, Email tìm dấu hiệu lừa đảo." />
-          <FeatureCard to="/reports" icon={<Shield className="h-6 w-6" />} title="Báo cáo cộng đồng" desc="Gửi báo cáo lừa đảo ẩn danh, góp phần xây dựng cơ sở dữ liệu phòng chống." />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <FeatureCard to="/dna-map" icon={<Network className="h-6 w-6" />} title="Bản đồ Bộ Gen Lừa Đảo" desc="4 nhóm lừa đảo phổ biến tại Việt Nam." />
+          <FeatureCard to="/screenshot-detector" icon={<Camera className="h-6 w-6" />} title="Quét ảnh chụp màn hình" desc="OCR + AI phân tích SMS, Zalo, Messenger." />
+          <FeatureCard to="/reports" icon={<Shield className="h-6 w-6" />} title="Báo cáo cộng đồng" desc="Gửi báo cáo ẩn danh, đóng góp dữ liệu." />
+          <FeatureCard to="/recovery" icon={<LifeBuoy className="h-6 w-6" />} title="Xử lí khi bị lừa" desc="Hướng dẫn khẩn cấp & ghi nhận thiệt hại." />
         </div>
       </section>
     </div>
