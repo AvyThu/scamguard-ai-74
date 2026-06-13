@@ -1,14 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { classifyScamText, CLUSTERS, type ClusterId } from "./scam-dna";
+import {
+  analyzeUrlStructure,
+  detectBrandImpersonation,
+  detectHomograph,
+  classifyRisk,
+  buildRecommendations,
+  type RiskFactor,
+} from "./url-intel";
 
-// ---------- URL Risk Analysis ----------
-const SUSPICIOUS_TLDS = [".xyz", ".top", ".cn", ".tk", ".click", ".info"];
-const SUSPICIOUS_HINTS = [
-  "vneid", "dichvucong", "bocongan", "tongcucthue", "shopee-", "tiktok-",
-  "thuhoivon", "laylaitien", "kiemtien", "hoahong", "trungthuong",
-];
-
+// ---------- URL Risk Analysis V2 ----------
 export const analyzeUrl = createServerFn({ method: "POST" })
   .inputValidator(z.object({ url: z.string().min(3).max(2048) }))
   .handler(async ({ data }) => {
@@ -21,86 +23,163 @@ export const analyzeUrl = createServerFn({ method: "POST" })
         risk: "UNKNOWN" as const,
         score: 0,
         url: data.url,
-        reasons: ["URL không hợp lệ"],
+        host: "",
+        factors: [],
         cluster: "UNKNOWN" as ClusterId,
-        recommendations: ["Kiểm tra lại địa chỉ URL"],
+        clusterName: "Không xác định",
+        brandImpersonated: null as string | null,
+        intelMatches: [] as Array<{ title: string; source_org: string; source_url: string | null }>,
+        recommendations: ["URL không hợp lệ. Vui lòng kiểm tra lại địa chỉ."],
       };
     }
     const host = parsed.hostname.toLowerCase();
-    const reasons: string[] = [];
-    let score = 0;
+    const factors: RiskFactor[] = [];
 
-    // Check blacklist
+    // 1) Structural heuristics
+    factors.push(...analyzeUrlStructure(parsed));
+
+    // 2) Homograph attack
+    for (const r of detectHomograph(host)) {
+      factors.push({ label: r, points: 22, category: "homograph" });
+    }
+
+    // 3) Brand impersonation + typosquatting
+    const brand = detectBrandImpersonation(host);
+    if (brand) {
+      brand.reasons.forEach((r) =>
+        factors.push({
+          label: `Mạo danh ${brand.brand}`,
+          detail: r,
+          points: 25,
+          category: "brand",
+        }),
+      );
+    }
+
+    // 4) Blacklist / Whitelist
+    const intelMatches: Array<{ title: string; source_org: string; source_url: string | null }> = [];
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: bl } = await supabaseAdmin.from("url_blacklist").select("url_pattern, reason, cluster");
+      const [{ data: bl }, { data: wl }, { data: intel }] = await Promise.all([
+        supabaseAdmin.from("url_blacklist").select("url_pattern, reason, cluster"),
+        supabaseAdmin.from("url_whitelist").select("url_pattern"),
+        supabaseAdmin
+          .from("scam_intel_campaigns")
+          .select("title, source_org, source_url, keywords, impersonated_brand"),
+      ]);
       if (bl) {
-        for (const row of bl as Array<{ url_pattern: string; reason: string | null; cluster: string | null }>) {
+        for (const row of bl as Array<{ url_pattern: string; reason: string | null }>) {
           if (host.includes(row.url_pattern.toLowerCase())) {
-            score += 70;
-            reasons.push(`Trong danh sách đen: ${row.reason ?? "đã được báo cáo"}`);
+            factors.push({
+              label: "Trùng khớp danh sách đen cộng đồng",
+              detail: row.reason ?? "Đã được người dùng báo cáo lừa đảo.",
+              points: 40,
+              category: "blacklist",
+            });
           }
         }
       }
-      const { data: wl } = await supabaseAdmin.from("url_whitelist").select("url_pattern");
       if (wl) {
         for (const row of wl as Array<{ url_pattern: string }>) {
           if (host.includes(row.url_pattern.toLowerCase())) {
-            score = Math.max(0, score - 50);
-            reasons.push(`Tên miền nằm trong danh sách trắng đã xác minh`);
+            factors.push({
+              label: "Tên miền nằm trong danh sách trắng đã xác minh",
+              points: -50,
+              category: "whitelist",
+            });
           }
         }
       }
+      // 5) Intel cross-reference
+      if (intel) {
+        const haystack = host + " " + parsed.pathname.toLowerCase();
+        for (const row of intel as Array<{
+          title: string;
+          source_org: string;
+          source_url: string | null;
+          keywords: string[];
+          impersonated_brand: string | null;
+        }>) {
+          const hit = row.keywords?.some((k) => haystack.includes(k.toLowerCase()));
+          if (hit) {
+            intelMatches.push({
+              title: row.title,
+              source_org: row.source_org,
+              source_url: row.source_url,
+            });
+          }
+        }
+        if (intelMatches.length > 0) {
+          factors.push({
+            label: `Trùng khớp ${intelMatches.length} chiến dịch lừa đảo đã được cảnh báo`,
+            detail: `Nguồn: ${[...new Set(intelMatches.map((i) => i.source_org))].join(", ")}`,
+            points: 30,
+            category: "intel",
+          });
+        }
+      }
     } catch (e) {
-      console.error("blacklist check failed", e);
+      console.error("intel check failed", e);
     }
 
-    // Heuristics
-    for (const tld of SUSPICIOUS_TLDS) {
-      if (host.endsWith(tld)) { score += 15; reasons.push(`Đuôi tên miền đáng ngờ: ${tld}`); break; }
-    }
-    for (const hint of SUSPICIOUS_HINTS) {
-      if (host.includes(hint)) { score += 20; reasons.push(`Chứa từ khoá lừa đảo phổ biến: "${hint}"`); }
-    }
-    if (host.split(".").length >= 4) { score += 10; reasons.push("Sub-domain phức tạp bất thường"); }
-    if (/[0-9]{4,}/.test(host)) { score += 10; reasons.push("Tên miền chứa nhiều chữ số"); }
-    if (parsed.protocol !== "https:") { score += 10; reasons.push("Không sử dụng HTTPS"); }
-    if (host.includes("-vn") || host.includes("vn-")) { score += 10; reasons.push("Cố gắng giả mạo tên miền .vn"); }
-
-    const cls = classifyScamText(host + " " + (parsed.pathname || ""));
+    // 6) Aggregate cluster
+    const cls = classifyScamText(host + " " + parsed.pathname);
     if (cls.cluster !== "UNKNOWN") {
-      reasons.push(`Tương đồng với nhóm lừa đảo: ${cls.clusterName}`);
+      factors.push({
+        label: `Tương đồng nhóm lừa đảo: ${cls.clusterName}`,
+        detail: `Từ khoá khớp: ${cls.matchedKeywords.slice(0, 4).join(", ")}`,
+        points: 10,
+        category: "keyword",
+      });
     }
 
-    score = Math.min(100, score);
-    const risk: "SAFE" | "SUSPICIOUS" | "DANGEROUS" =
-      score >= 60 ? "DANGEROUS" : score >= 25 ? "SUSPICIOUS" : "SAFE";
+    const totalRaw = factors.reduce((s, f) => s + f.points, 0);
+    const score = Math.max(0, Math.min(100, totalRaw));
+    const risk = classifyRisk(score);
+    const recommendations = buildRecommendations(risk, brand?.brand);
+    // Append cluster-specific guidance for dangerous results
+    if (risk === "DANGEROUS" && cls.cluster !== "UNKNOWN") {
+      recommendations.push(
+        ...CLUSTERS[cls.cluster as Exclude<ClusterId, "UNKNOWN">].recommendations,
+      );
+    }
 
-    const recommendations =
-      risk === "DANGEROUS"
-        ? [
-            "TUYỆT ĐỐI không nhập thông tin cá nhân, OTP, mật khẩu.",
-            "Không tải hoặc cài đặt ứng dụng từ trang này.",
-            "Báo cáo URL này tới cộng đồng ScamShield.",
-            ...(cls.cluster !== "UNKNOWN" ? CLUSTERS[cls.cluster as Exclude<ClusterId, "UNKNOWN">].recommendations : []),
-          ]
-        : risk === "SUSPICIOUS"
-        ? ["Hãy kiểm tra kỹ trước khi truy cập", "Xác minh với người thân hoặc cơ quan chức năng"]
-        : ["Không phát hiện dấu hiệu nguy hiểm rõ ràng. Vẫn nên cảnh giác."];
-
-    // Fire-and-forget analytics
+    // Analytics
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin.from("analytics_events").insert({
         event_type: "url_analysis",
         cluster: cls.cluster,
         risk_level: risk,
-        metadata: { host, score },
+        metadata: { host, score, brand: brand?.brand ?? null, intelHits: intelMatches.length },
       });
     } catch {}
 
-    return { risk, score, url: data.url, reasons, cluster: cls.cluster, recommendations };
+    return {
+      url: data.url,
+      host,
+      score,
+      risk,
+      factors,
+      cluster: cls.cluster,
+      clusterName: cls.clusterName,
+      brandImpersonated: brand?.brand ?? null,
+      intelMatches,
+      recommendations,
+    };
   });
+
+// ---------- Get Intel Campaigns (public list) ----------
+export const getIntelCampaigns = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("scam_intel_campaigns")
+    .select("*")
+    .order("reported_date", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return { campaigns: data ?? [] };
+});
 
 // ---------- Text classification ----------
 export const classifyText = createServerFn({ method: "POST" })
@@ -111,7 +190,7 @@ export const classifyText = createServerFn({ method: "POST" })
 export const analyzeScreenshot = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
-      imageDataUrl: z.string().min(20).max(8_000_000), // data:image/png;base64,...
+      imageDataUrl: z.string().min(20).max(8_000_000),
     }),
   )
   .handler(async ({ data }) => {
@@ -222,7 +301,7 @@ export const submitReport = createServerFn({ method: "POST" })
     return { ok: true, id: (row as { id: string }).id, cluster: cls.cluster };
   });
 
-// ---------- Chat (non-stream simple) ----------
+// ---------- Chat ----------
 export const chatWithAssistant = createServerFn({ method: "POST" })
   .inputValidator(z.object({ messages: z.array(z.object({ role: z.enum(["user","assistant","system"]), content: z.string().max(4000) })).min(1).max(40) }))
   .handler(async ({ data }) => {
