@@ -212,6 +212,51 @@ export type Database = {
         }
         Relationships: []
       }
+      scam_intel_campaigns: {
+        Row: {
+          cluster: string | null
+          created_at: string
+          description: string | null
+          id: string
+          impersonated_brand: string | null
+          keywords: string[]
+          reported_date: string | null
+          severity: string
+          source_org: string
+          source_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cluster?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impersonated_brand?: string | null
+          keywords?: string[]
+          reported_date?: string | null
+          severity?: string
+          source_org: string
+          source_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cluster?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impersonated_brand?: string | null
+          keywords?: string[]
+          reported_date?: string | null
+          severity?: string
+          source_org?: string
+          source_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scam_reports: {
         Row: {
           category: string
