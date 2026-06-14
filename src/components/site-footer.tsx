@@ -41,9 +41,14 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-border bg-background/60">
-        <div className="mx-auto max-w-7xl px-4 py-4 text-center text-sm text-foreground">
-          © {new Date().getFullYear()} ScamShield AI. Phần mềm được nghiên cứu và phát triển bởi{" "}
-          <span className="font-semibold">Huỳnh Anh Thư</span>.
+        <div className="mx-auto max-w-7xl space-y-1 px-4 py-4 text-center text-sm text-foreground">
+          <div>
+            © {new Date().getFullYear()} ScamShield AI. Phần mềm được nghiên cứu và phát triển bởi{" "}
+            <span className="font-semibold">Huỳnh Anh Thư</span>.
+          </div>
+          <div className="font-semibold text-cyber">
+            Dự án phi lợi nhuận vì cộng đồng
+          </div>
         </div>
       </div>
     </footer>
