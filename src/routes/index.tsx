@@ -201,24 +201,6 @@ function Home() {
         </section>
       )}
 
-      {/* National stats */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
-        <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold">Thống kê An ninh mạng Quốc gia</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Nguồn dữ liệu: Cơ quan chức năng Việt Nam · Cập nhật: {stats[0]?.updated_at ? new Date(stats[0].updated_at).toLocaleDateString("vi-VN") : "—"}
-          </p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-4">
-          {stats.map((s) => (
-            <Card key={s.metric_key} className="p-6">
-              <div className="text-3xl font-bold text-primary">{s.value}</div>
-              <div className="mt-1 text-sm font-medium">{s.label}</div>
-              <div className="mt-2 text-xs text-muted-foreground">{s.source}</div>
-            </Card>
-          ))}
-        </div>
-      </section>
 
       {/* Features */}
       <section className="mx-auto max-w-7xl px-4 pb-20">
