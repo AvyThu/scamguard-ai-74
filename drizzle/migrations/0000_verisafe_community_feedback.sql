@@ -1,0 +1,15 @@
+CREATE TABLE public.community_votes (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), report_id uuid NOT NULL REFERENCES public.scam_reports(id) ON DELETE CASCADE, voter_key uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(report_id, voter_key));
+GRANT INSERT ON public.community_votes TO anon, authenticated;
+GRANT ALL ON public.community_votes TO service_role;
+ALTER TABLE public.community_votes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Vote on approved reports" ON public.community_votes FOR INSERT TO anon, authenticated WITH CHECK (EXISTS (SELECT 1 FROM public.scam_reports WHERE id = report_id AND status = 'approved'));
+CREATE FUNCTION public.community_vote_counts() RETURNS TABLE(report_id uuid, votes bigint) LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$ SELECT v.report_id, count(*) FROM public.community_votes v JOIN public.scam_reports r ON r.id = v.report_id WHERE r.status = 'approved' GROUP BY v.report_id $$;
+REVOKE ALL ON FUNCTION public.community_vote_counts() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.community_vote_counts() TO anon, authenticated, service_role;
+CREATE TABLE public.app_feedback (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), rating integer NOT NULL CHECK (rating BETWEEN 1 AND 5), comment text CHECK (char_length(comment) <= 2000), created_at timestamptz NOT NULL DEFAULT now());
+GRANT INSERT ON public.app_feedback TO anon, authenticated;
+GRANT SELECT ON public.app_feedback TO authenticated;
+GRANT ALL ON public.app_feedback TO service_role;
+ALTER TABLE public.app_feedback ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Submit anonymous feedback" ON public.app_feedback FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Admin reads feedback" ON public.app_feedback FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));

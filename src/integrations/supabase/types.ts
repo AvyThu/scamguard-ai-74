@@ -71,6 +71,56 @@ export type Database = {
         }
         Relationships: []
       }
+      app_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+        }
+        Relationships: []
+      }
+      community_votes: {
+        Row: {
+          created_at: string
+          id: string
+          report_id: string
+          voter_key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_id: string
+          voter_key: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_id?: string
+          voter_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_votes_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "scam_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cyber_stats: {
         Row: {
           id: string
@@ -379,6 +429,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      community_vote_counts: {
+        Args: never
+        Returns: {
+          report_id: string
+          votes: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
