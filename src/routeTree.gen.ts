@@ -15,6 +15,8 @@ import { Route as RecoveryRouteImport } from './routes/recovery'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as EmergencyRouteImport } from './routes/emergency'
 import { Route as DnaMapRouteImport } from './routes/dna-map'
+import { Route as DeepfakeRouteImport } from './routes/deepfake'
+import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -50,6 +52,16 @@ const DnaMapRoute = DnaMapRouteImport.update({
   path: '/dna-map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeepfakeRoute = DeepfakeRouteImport.update({
+  id: '/deepfake',
+  path: '/deepfake',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -76,6 +88,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
+  '/community': typeof CommunityRoute
+  '/deepfake': typeof DeepfakeRoute
   '/dna-map': typeof DnaMapRoute
   '/emergency': typeof EmergencyRoute
   '/profile': typeof ProfileRoute
@@ -88,6 +102,8 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
+  '/community': typeof CommunityRoute
+  '/deepfake': typeof DeepfakeRoute
   '/dna-map': typeof DnaMapRoute
   '/emergency': typeof EmergencyRoute
   '/profile': typeof ProfileRoute
@@ -101,6 +117,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
+  '/community': typeof CommunityRoute
+  '/deepfake': typeof DeepfakeRoute
   '/dna-map': typeof DnaMapRoute
   '/emergency': typeof EmergencyRoute
   '/profile': typeof ProfileRoute
@@ -115,6 +133,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/analytics'
     | '/auth'
+    | '/community'
+    | '/deepfake'
     | '/dna-map'
     | '/emergency'
     | '/profile'
@@ -127,6 +147,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/analytics'
     | '/auth'
+    | '/community'
+    | '/deepfake'
     | '/dna-map'
     | '/emergency'
     | '/profile'
@@ -139,6 +161,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/analytics'
     | '/auth'
+    | '/community'
+    | '/deepfake'
     | '/dna-map'
     | '/emergency'
     | '/profile'
@@ -152,6 +176,8 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AnalyticsRoute: typeof AnalyticsRoute
   AuthRoute: typeof AuthRoute
+  CommunityRoute: typeof CommunityRoute
+  DeepfakeRoute: typeof DeepfakeRoute
   DnaMapRoute: typeof DnaMapRoute
   EmergencyRoute: typeof EmergencyRoute
   ProfileRoute: typeof ProfileRoute
@@ -204,6 +230,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DnaMapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/deepfake': {
+      id: '/deepfake'
+      path: '/deepfake'
+      fullPath: '/deepfake'
+      preLoaderRoute: typeof DeepfakeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -240,6 +280,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AnalyticsRoute: AnalyticsRoute,
   AuthRoute: AuthRoute,
+  CommunityRoute: CommunityRoute,
+  DeepfakeRoute: DeepfakeRoute,
   DnaMapRoute: DnaMapRoute,
   EmergencyRoute: EmergencyRoute,
   ProfileRoute: ProfileRoute,
